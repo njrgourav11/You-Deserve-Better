@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
@@ -10,25 +10,28 @@ import Toast from '@/components/Toast'
 import HeartLoader from '@/components/HeartLoader'
 import { Heart, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
+const fadeUp = (reduced: boolean) => ({
+  hidden: { opacity: 0, y: reduced ? 0 : 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
+})
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  })
-  
+  const [formData, setFormData] = useState({ email: '', password: '' })
+
   const { login, register } = useAuth()
   const router = useRouter()
   const { toast, showToast, hideToast } = useToast()
+  const prefersReducedMotion = useReducedMotion()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    
+
     try {
       if (isLogin) {
         await login(formData.email, formData.password)
@@ -37,7 +40,7 @@ export default function Login() {
         await register(formData.email, formData.password)
         showToast('success', 'Account created successfully! Welcome to You Deserve Better.')
       }
-      setTimeout(() => router.push('/'), 1500)
+      setTimeout(() => router.push('/'), 1200)
     } catch (err: any) {
       const errorMessage = err.message || 'Authentication failed'
       setError(errorMessage)
@@ -48,37 +51,32 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Animated glow */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="max-w-md w-full space-y-8"
-      >
+        aria-hidden
+        animate={prefersReducedMotion ? {} : { scale: [1, 1.05, 1], opacity: [0.3, 0.6, 0.3] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute -z-10 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-pink-300/30 to-purple-300/30 blur-3xl"
+      />
+
+      <motion.div initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-md w-full space-y-8">
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-slate-700/50 p-8">
           {/* Header */}
           <div className="text-center">
             <Link href="/" className="flex items-center justify-center space-x-2 mb-6">
               <Heart className="h-10 w-10 text-pink-500" />
-              <span className="font-bold text-2xl text-gray-900 dark:text-white">
-                You Deserve Better
-              </span>
+              <span className="font-bold text-2xl text-gray-900 dark:text-white">You Deserve Better</span>
             </Link>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {isLogin ? 'Welcome Back' : 'Create Account'}
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              {isLogin ? 'Sign in to continue your wellness journey' : 'Join our community today'}
-            </p>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+            <p className="text-gray-600 dark:text-gray-300">{isLogin ? 'Sign in to continue your wellness journey' : 'Join our community today'}</p>
           </div>
 
           {/* Form */}
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email Address
-                </label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Mail className="h-5 w-5 text-gray-400" />
@@ -97,9 +95,7 @@ export default function Login() {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Password
-                </label>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-gray-400" />
@@ -114,16 +110,8 @@ export default function Login() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
+                  <button type="button" className="absolute inset-y-0 right-0 pr-3 flex items-center" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" /> : <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />}
                   </button>
                 </div>
               </div>
@@ -131,35 +119,20 @@ export default function Login() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-pink-500 focus:ring-pink-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                  Remember me
-                </label>
+                <input id="remember-me" name="remember-me" type="checkbox" className="h-4 w-4 text-pink-500 focus:ring-pink-500 border-gray-300 rounded" />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">Remember me</label>
               </div>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-pink-500 hover:text-pink-600 font-medium"
-              >
-                Forgot password?
-              </Link>
+              <Link href="/forgot-password" className="text-sm text-pink-500 hover:text-pink-600 font-medium">Forgot password?</Link>
             </div>
 
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
+            {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">{error}</div>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-4 rounded-xl hover:from-pink-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+              className="relative overflow-hidden w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-4 rounded-xl hover:from-pink-600 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-pink-400/30 transition-all duration-300 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
             >
+              <span className="absolute inset-0 bg-white/20 translate-x-[-120%] hover:translate-x-[120%] transition-transform duration-700" />
               {loading ? (
                 <>
                   <HeartLoader size="sm" />
@@ -172,12 +145,8 @@ export default function Login() {
 
             <div className="text-center">
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-pink-500 hover:text-pink-600 font-medium"
-                >
+                {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
+                <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-pink-500 hover:text-pink-600 font-medium">
                   {isLogin ? 'Sign up here' : 'Sign in here'}
                 </button>
               </p>
@@ -191,9 +160,7 @@ export default function Login() {
                 <div className="w-full border-t border-gray-300 dark:border-gray-600" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-                  Or continue with
-                </span>
+                <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">Or continue with</span>
               </div>
             </div>
 
@@ -208,12 +175,7 @@ export default function Login() {
           </div>
         </div>
       </motion.div>
-      <Toast
-        type={toast.type}
-        message={toast.message}
-        isVisible={toast.isVisible}
-        onClose={hideToast}
-      />
+      <Toast type={toast.type} message={toast.message} isVisible={toast.isVisible} onClose={hideToast} />
     </div>
   )
 }
